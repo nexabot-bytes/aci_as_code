@@ -1,0 +1,8 @@
+---
+# =============================================================================
+# apic.nac.yaml  —  reglages globaux APIC (template vide)
+# Doc : https://netascode.cisco.com/docs/data_models/apic/overview
+# =============================================================================
+apic: {}
+  # Exemple :
+  # auto_generate_switch_pod_profiles: true

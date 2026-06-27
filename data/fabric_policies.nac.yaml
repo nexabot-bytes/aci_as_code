@@ -1,0 +1,8 @@
+---
+# =============================================================================
+# fabric_policies.nac.yaml  —  section FABRIC POLICIES (template vide)
+# Ex : BGP route reflectors, DNS, NTP, SNMP, Syslog, backups...
+# Doc : https://netascode.cisco.com/docs/data_models/apic/fabric_policies/overview
+# =============================================================================
+apic:
+  fabric_policies: {}

@@ -1,0 +1,8 @@
+---
+# =============================================================================
+# node_policies.nac.yaml  —  section NODE POLICIES (template vide)
+# Ex : nodes (spines/leafs : id, serial, OOB), vPC groups, mgmt EPGs...
+# Doc : https://netascode.cisco.com/docs/data_models/apic/node_policies/overview
+# =============================================================================
+apic:
+  node_policies: {}

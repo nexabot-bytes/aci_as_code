@@ -1,0 +1,10 @@
+---
+# =============================================================================
+# interface_policies.nac.yaml  —  section INTERFACE POLICIES (template vide)
+# Ex : assignation des policy groups aux ports physiques (par node).
+# Astuce : pour une grosse fabric, l'exemple officiel splitte par switch
+#          (node_1101.nac.yaml, node_1102.nac.yaml, ...).
+# Doc : https://netascode.cisco.com/docs/data_models/apic/interface_policies/overview
+# =============================================================================
+apic:
+  interface_policies: {}

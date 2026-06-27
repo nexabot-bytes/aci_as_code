@@ -1,0 +1,15 @@
+---
+# =============================================================================
+# defaults.nac.yaml  —  SURCHARGE des valeurs par defaut (template vide)
+#
+# Le module embarque deja un gros fichier de defauts (best practices) ; ce
+# fichier-ci sert UNIQUEMENT a surcharger ce que VOUS voulez changer.
+# Laisse vide = on garde tous les defauts du module.
+# Doc : https://netascode.cisco.com/docs/data_models/apic/overview
+# =============================================================================
+defaults: {}
+  # Exemple :
+  # apic:
+  #   tenants:
+  #     bridge_domains:
+  #       unicast_routing: false

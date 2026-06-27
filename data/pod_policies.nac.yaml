@@ -1,0 +1,8 @@
+---
+# =============================================================================
+# pod_policies.nac.yaml  —  section POD POLICIES (template vide)
+# Ex : pods, TEP data plane, pod policy groups...
+# Doc : https://netascode.cisco.com/docs/data_models/apic/pod_policies/overview
+# =============================================================================
+apic:
+  pod_policies: {}

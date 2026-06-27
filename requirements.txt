@@ -1,0 +1,6 @@
+# Dependances Python pour Network as Code - ACI
+# Installees automatiquement par "make install" dans le venv .venv/
+#
+# nac-validate : outil officiel Cisco de validation des fichiers YAML
+#                (syntaxe + schema). Requiert Python 3.10+.
+nac-validate==2.0.0

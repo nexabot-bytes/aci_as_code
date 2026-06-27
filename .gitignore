@@ -1,0 +1,18 @@
+# --- Terraform ---
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+crash.log
+
+# --- Secrets / variables (jamais commiter) ---
+terraform.tfvars
+*.auto.tfvars
+
+# --- Python ---
+.venv/
+__pycache__/
+*.pyc
+
+# --- Divers ---
+.DS_Store

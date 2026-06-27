@@ -1,0 +1,10 @@
+---
+# =============================================================================
+# tenants.nac.yaml  —  section TENANTS (template vide)
+# Ex : tenants, VRFs, Bridge Domains, EPGs, contracts, filters, L3Outs...
+# C'est ici qu'on ajoutera un VLAN lors de la demo.
+# Astuce : on peut aussi faire un fichier par tenant (tenant_PROD.nac.yaml...).
+# Doc : https://netascode.cisco.com/docs/data_models/apic/tenants/overview
+# =============================================================================
+apic:
+  tenants: []

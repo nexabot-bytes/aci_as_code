@@ -1,0 +1,9 @@
+---
+# =============================================================================
+# access_policies.nac.yaml  —  section ACCESS POLICIES (template vide)
+# Ex : VLAN pools, domains, AAEPs, interface policies (CDP/LLDP/LACP),
+#      interface policy groups...
+# Doc : https://netascode.cisco.com/docs/data_models/apic/access_policies/overview
+# =============================================================================
+apic:
+  access_policies: {}
