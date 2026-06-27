@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # =============================================================================
 #  Network as Code - ACI : installation "en une frappe"
-#  Cible : RHEL 10.x / x86_64. Ne necessite PAS make (juste bash).
+#  Cible : RHEL 10.x / x86_64.
+#
+#  Ne necessite NI make NI unzip NI depots dnf actives.
+#  Seuls prerequis : bash, curl et python3 (presents par defaut sur RHEL 10).
 #
 #  Usage :   bash install.sh
 # =============================================================================
@@ -12,24 +15,39 @@ VENV=".venv"
 
 cd "$(dirname "$0")"
 
-echo ">> Prerequis systeme (dnf)..."
-sudo dnf install -y git unzip curl python3 python3-pip
+# --- Verification des prerequis de base ------------------------------------
+missing=()
+command -v curl    >/dev/null 2>&1 || missing+=(curl)
+command -v python3 >/dev/null 2>&1 || missing+=(python3)
+if [ "${#missing[@]}" -gt 0 ]; then
+  echo "!! Outils manquants : ${missing[*]}"
+  echo "   Sur RHEL il faut des depots actives pour les installer, par ex. :"
+  echo "     sudo subscription-manager register --username <user> --auto-attach"
+  echo "     sudo dnf install -y ${missing[*]}"
+  exit 1
+fi
 
+# --- Installation de Terraform (binaire epingle, sans unzip) ----------------
 if command -v terraform >/dev/null 2>&1; then
   echo ">> Terraform deja present : $(terraform version | head -1)"
 else
   echo ">> Telechargement de Terraform ${TERRAFORM_VERSION}..."
   curl -fsSL "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip" -o /tmp/terraform.zip
-  sudo unzip -o /tmp/terraform.zip -d /usr/local/bin/
-  rm -f /tmp/terraform.zip
+  echo ">> Extraction (via python zipfile)..."
+  rm -rf /tmp/tf_extract && mkdir -p /tmp/tf_extract
+  python3 -m zipfile -e /tmp/terraform.zip /tmp/tf_extract
+  sudo install -m 0755 /tmp/tf_extract/terraform /usr/local/bin/terraform
+  rm -rf /tmp/terraform.zip /tmp/tf_extract
   echo ">> Terraform installe : $(terraform version | head -1)"
 fi
 
+# --- venv Python + nac-validate --------------------------------------------
 echo ">> Creation du venv (${VENV}) + dependances Python..."
 python3 -m venv "${VENV}"
-"${VENV}/bin/pip" install --quiet --upgrade pip
+"${VENV}/bin/python" -m pip install --quiet --upgrade pip
 "${VENV}/bin/pip" install --quiet -r requirements.txt
 
+# --- Initialisation et validation ------------------------------------------
 echo ">> terraform init (provider aci + module Network as Code)..."
 terraform init -input=false
 
