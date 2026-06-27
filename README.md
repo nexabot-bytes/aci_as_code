@@ -29,11 +29,17 @@ Pas besoin d'installer Terraform ni Python à la main : `make install` s'en char
 ```bash
 git clone https://github.com/nexabot-bytes/aci_as_code.git
 cd aci_as_code
-make install
+bash install.sh
 ```
 
 > C'est l'URL de ce dépôt. Un autre utilisateur n'a qu'à le cloner et lancer
-> `make install` pour obtenir le même environnement.
+> `bash install.sh` pour obtenir le même environnement.
+>
+> **Pourquoi `bash install.sh` et pas `make install` ?** Sur une VM RHEL 10
+> minimale, `make` n'est pas installé par défaut. Le script `install.sh` ne
+> dépend que de `bash` → il marche sur une VM vierge sans aucun prérequis.
+> Si vous préférez `make` : `sudo dnf install -y make` puis `make install`
+> (le `Makefile` fait exactement la même chose).
 
 `make install` réalise automatiquement :
 
