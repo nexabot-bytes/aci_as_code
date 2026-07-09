@@ -31,7 +31,7 @@ terraform {
 provider "aci" {
   username = "admin"            # <-- a modifier
   password = "C1sco12345"       # <-- a modifier
-  url      = "https://10.0.0.1" # <-- a modifier (IP/URL de l'APIC)
+  url      = "https://192.168.0.245" # <-- a modifier (IP/URL de l'APIC)
   insecure = true               # simulateur : certificat self-signed
 }
 
@@ -43,13 +43,13 @@ provider "aci" {
 module "aci" {
   source  = "netascode/nac-aci/aci"
   version = "2.0.0"
-
+  write_default_values_file = "./defaults_effectifs.yaml"
   yaml_directories = ["data"]
 
-  manage_fabric_policies    = true
-  manage_access_policies    = true
-  manage_pod_policies       = true
-  manage_node_policies      = true
-  manage_interface_policies = true
-  manage_tenants            = true
+  manage_fabric_policies    = true   # singletons globaux (captures a leurs vraies valeurs)
+  manage_access_policies    = true   # vlan pools, domaines, aaep, cdp/lldp/lacp...
+  manage_pod_policies       = true   # pod setup
+  manage_node_policies      = true   # node control...
+  manage_interface_policies = true   # interface policies
+  manage_tenants            = true   # tenants + vrf/bd/epg/contracts/l3outs
 }

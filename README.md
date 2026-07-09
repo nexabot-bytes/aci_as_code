@@ -1,144 +1,111 @@
-# Network as Code — ACI : installation
+# ACI as Code — Brownfield Network-as-Code pour Cisco ACI
 
-Installation **en une frappe** de l'environnement Cisco *Network as Code* (NaC)
-pour ACI, sur une machine **RHEL 10.x** neuve, contre un **simulateur APIC**
-(authentification user/password, certificat self-signed).
+Outil de **reprise brownfield** pour [Cisco Network as Code](https://netascode.cisco.com/) :
+il photographie une fabric ACI **existante** dans le data model NaC (YAML), l'adopte dans
+Terraform **sans jamais écrire sur la fabric**, puis permet de la gérer en Infrastructure-as-Code
+— avec un dispositif de sûreté conçu pour qu'aucune opération ne puisse provoquer de panne
+(secrets écrasés, objets détruits, configuration remise aux défauts).
 
-Ce projet reprend la structure de l'exemple officiel Cisco
-([nac-aci-comprehensive-example](https://github.com/netascode/nac-aci-comprehensive-example)) :
-les **six sections** de la fabric sont gérées (`manage_* = true`), et le dossier
-`data/` contient un **template vide par section**, prêt à compléter.
+```
+   Fabric ACI existante ──capture──▶ data/*.nac.yaml ──adopt──▶ state Terraform
+        (lecture seule)              (source de vérité)         (import, zéro POST)
+                                            │
+                              l'équipe édite le YAML (git)
+                                            │
+                                          sync  ──▶ terraform apply (gardes-fous)
+```
 
-> `make install` installe et **valide** l'environnement. Le **déploiement**
-> (ajout d'un VLAN, etc.) se fait ensuite **manuellement** avec `terraform apply`.
+## Composants
 
----
+| Élément | Rôle |
+|---|---|
+| [`tools/nac.py`](tools/nac.py) | L'outil : `capture` / `validate` / `plan` / `sync` / `adopt` / `drift` / `bootstrap` |
+| [`data/*.nac.yaml`](data/) | Le data model NaC (une section par fichier), généré par `capture`, édité ensuite par l'équipe |
+| `main.tf` + module [`netascode/nac-aci`](https://github.com/netascode/terraform-aci-nac-aci) v2.0.0 | Le déploiement Terraform officiel Cisco (non modifié) |
+| [`tools/test_nac.py`](tools/test_nac.py) | Outillage de test : audit, couverture, round-trip, selftest |
 
-## Prérequis
+Le mapping APIC ↔ YAML est **dérivé automatiquement** des blocs `content {}` des sous-modules
+Terraform officiels (source de vérité versionnée) — complété par ~60 captures dédiées pour les
+objets enfants, relations et attributs complexes.
 
-- RHEL 10.x, x86_64, accès `sudo`
-- Accès internet (pour Terraform, le module NaC et nac-validate)
-- Un APIC / simulateur joignable
-
-Pas besoin d'installer Terraform ni Python à la main : `make install` s'en charge.
-
----
-
-## Installation en une frappe
+## Installation (RHEL 10.x, une frappe)
 
 ```bash
 git clone https://github.com/nexabot-bytes/aci_as_code.git
 cd aci_as_code
-bash install.sh
+bash install.sh          # Terraform épinglé + venv + terraform init + validations
 ```
 
-> C'est l'URL de ce dépôt. Un autre utilisateur n'a qu'à le cloner et lancer
-> `bash install.sh` pour obtenir le même environnement.
->
-> **Pourquoi `bash install.sh` et pas `make install` ?** Sur une VM RHEL 10
-> minimale, `make` n'est pas installé par défaut. Le script `install.sh` ne
-> dépend que de `bash` → il marche sur une VM vierge sans aucun prérequis.
-> Si vous préférez `make` : `sudo dnf install -y make` puis `make install`
-> (le `Makefile` fait exactement la même chose).
+Configurer ensuite la connexion APIC dans le bloc `provider "aci"` de `main.tf`
+(surchargeable par `APIC_URL` / `APIC_USER` / `APIC_PWD`).
 
-`make install` réalise automatiquement :
-
-1. installe les prérequis système (`git`, `unzip`, `curl`) ;
-2. installe **Terraform 1.15.7** (binaire épinglé) ;
-3. installe **Python 3** et crée un venv `.venv/` avec **nac-validate** ;
-4. `terraform init` → télécharge le provider `aci` et le module `netascode/nac-aci/aci` v2.0.0 ;
-5. `terraform validate` + `nac-validate data/` → vérifie la config et les YAML.
-
-À la fin, l'environnement est prêt. **Rien n'est déployé sur la fabric.**
-
----
-
-## Configurer la connexion à l'APIC
-
-Éditez le bloc `provider` dans **`main.tf`** :
-
-```hcl
-provider "aci" {
-  username = "admin"               # votre utilisateur
-  password = "C1sco12345"          # votre mot de passe
-  url      = "https://10.0.0.1"    # IP/URL de l'APIC
-  insecure = true                  # simulateur : certificat self-signed
-}
-```
-
-> Le mot de passe n'est jamais commité : `terraform.tfvars`, `*.tfstate` et
-> `.terraform/` sont déjà exclus via `.gitignore`.
-
----
-
-## Le data model (`data/`)
-
-Le module lit **tous** les `*.nac.yaml` du dossier `data/` et les **fusionne**.
-Le découpage en plusieurs fichiers (un par section) est une **convention de
-lisibilité** de l'exemple officiel — ce n'est pas obligatoire (on pourrait tout
-mettre dans un seul fichier ; les noms de fichiers sont libres).
-
-| Fichier (template vide)       | Section gérée                                   |
-|-------------------------------|-------------------------------------------------|
-| `apic.nac.yaml`               | Réglages globaux APIC                            |
-| `fabric_policies.nac.yaml`    | BGP RR, DNS, NTP, SNMP, Syslog, backups…        |
-| `access_policies.nac.yaml`    | VLAN pools, domains, AAEPs, CDP/LLDP/LACP…       |
-| `pod_policies.nac.yaml`       | Pods, TEP, pod policy groups                     |
-| `node_policies.nac.yaml`      | Spines/leafs, vPC groups, mgmt                   |
-| `interface_policies.nac.yaml` | Affectation des policy groups aux ports          |
-| `tenants.nac.yaml`            | Tenants, VRFs, BDs, EPGs, contracts, L3Outs      |
-| `defaults.nac.yaml`           | **Surcharge** des valeurs par défaut du module   |
-
-> **`defaults.nac.yaml` ≠ les défauts du module.** Le module embarque déjà un
-> gros fichier de valeurs par défaut (best practices). Votre `defaults.nac.yaml`
-> sert uniquement à **surcharger** ce que vous voulez changer ; laissé vide, on
-> garde tous les défauts du module.
-
----
-
-## Démo (manuelle, après l'installation)
-
-1. Complétez un template, par ex. `data/tenants.nac.yaml` (ajout d'un tenant/VLAN).
-2. Déployez :
+## Workflow brownfield (l'ordre est important)
 
 ```bash
-terraform apply
+python tools/nac.py capture     # 1. photo complète de la fabric -> data/ (LECTURE SEULE)
+python tools/nac.py validate    # 2. validation du schéma (nac-validate)
+python tools/nac.py plan        # 3. aperçu terraform (ne change rien)
+python tools/nac.py adopt --yes # 4. adoption par IMPORT terraform (zéro POST fabric)
+python tools/nac.py plan        # 5. attendu : « No changes » = round-trip parfait
 ```
 
-Pour tout retirer :
+Ensuite, cycle de vie normal : éditer `data/*.nac.yaml` (revue git) → `plan` → `sync`.
+`bootstrap` enchaîne capture+validate+plan (+`--adopt`). `drift` compare fabric vs YAML sans rien toucher.
 
-```bash
-terraform destroy
-```
+## Dispositif de sûreté (résumé — analyse complète : [tools/ANALYSE_SURETE_2026-07-06.md](tools/ANALYSE_SURETE_2026-07-06.md))
 
----
+Le scénario redouté — *« un usager ajoute un objet au YAML, on sync, et un mot de passe est
+écrasé sur la fabric »* — est bloqué par **quatre couches indépendantes, toutes fail-closed** :
 
-## Tester / recommencer (rollback VM)
+1. **Capture sans secrets** : aucun secret n'est jamais lu ni écrit ; 3 placeholders documentés
+   uniquement là où le module exige la variable (pwd utilisateur, authKey OSPF, PSK MACsec).
+2. **Câblage null** : tous les autres secrets sont omis du POST (`null`) → l'APIC conserve la
+   valeur existante, même au CREATE.
+3. **`ignore_changes`** : les modules Cisco retirent les secrets du diff → un UPDATE ne renvoie
+   jamais un secret.
+4. **Garde CREATE (`SECRET_CLASSES`, 17 classes)** : tout CREATE visant un objet à secret qui
+   existe déjà sur la fabric est **refusé** par `sync` et `adopt` → adoption par import obligatoire.
 
-Versions épinglées (Terraform + nac-validate) → reproductible. Après un rollback,
-relancez simplement `make install`. Sans rollback :
+S'y ajoutent : garde **anti-destroy** (tout destroy/replace bloque, comptage via plan JSON),
+capture **fail-closed** (une classe APIC illisible ⇒ la photo n'est pas écrite, jamais de YAML
+tronqué), lectures APIC **paginées** (pas de liste tronquée sur grosse fabric), et gardes
+elles-mêmes fail-closed (APIC injoignable pendant la vérification ⇒ abort, jamais « supposé absent »).
+`--force` désactive toutes les protections : réservé aux opérations revues.
 
-```bash
-make clean      # supprime .terraform/, state local et venv
-```
+Validé par audit adversarial indépendant (2026-07-06) : vulnérabilités C1/M3/M4 trouvées,
+corrigées et testées unitairement le jour même.
 
----
+## Couverture
 
-## Commandes utiles
+**187 modules NaC sur 195** capturés et validés en round-trip golden (objet créé sur fabric →
+capture → adopt → `terraform plan` = *No changes*). Détail complet, méthode et pièges APIC :
+[tools/MODULE_COVERAGE.md](tools/MODULE_COVERAGE.md) (34 vagues documentées) et
+[tools/COVERAGE_GAPS_2026-07-03.md](tools/COVERAGE_GAPS_2026-07-03.md) (audit variable par variable).
 
-| Commande        | Effet                                          |
-|-----------------|------------------------------------------------|
-| `make install`  | Installe tout et valide (commande principale)  |
-| `make deps`     | Installe Terraform + Python seulement          |
-| `make init`     | `terraform init`                               |
-| `make validate` | Valide la config Terraform + YAML              |
-| `make clean`    | Supprime l'état local et le venv               |
+**Exclusions volontaires (documentées)** :
 
----
+| Exclusion | Raison |
+|---|---|
+| `aci_mcp`, `aci_smart_licensing` | secret requis (clé MCP, token CSSM) — désactivés via `data/modules.nac.yaml` |
+| `aci_node_registration` | sécurité : risque de ré-enregistrement/perte d'un switch — activable explicitement |
+| `pod-setup` (TEP pool), tenant `infra`/`mgmt`/`common` | fondations fabric, `managed: false` |
+| Multi-device (service graph, device selection), VMM absent du lab | warning émis à la capture, complétion manuelle |
+| Classes `vxlan*` | non résolues sur APIC 6.0(7e) |
 
-## Références officielles
+**À signaler à Cisco (bugs upstream identifiés)** : condition `console_realm`/`default_realm`
+inversée dans `terraform-aci-aaa` (accès console LDAP cassé au sync — contourné par nac.py) ;
+`ignore_changes` manquant sur `snmpTrapDest.secName` ; `cert=""` posté au create par le module
+keyring (bloqué par notre garde).
+
+## Environnement de validation
+
+Développé et validé contre un simulateur APIC **6.0(7e)** : fabric de test 7 tenants
+(L3Outs OSPF/BGP, floating SVI, vPC, contrats/PBR, HSRP, MACsec, SPAN, QoS…), 579 ressources
+Terraform gérées, plan final *No changes*. Versions épinglées (Terraform 1.15.7, nac-aci 2.0.0).
+
+## Références
 
 - NaC ACI — First Steps : https://netascode.cisco.com/docs/start/aci/first_steps/
-- Exemple complet : https://github.com/netascode/nac-aci-comprehensive-example
 - Module Terraform : https://github.com/netascode/terraform-aci-nac-aci
 - Provider ACI : https://github.com/CiscoDevNet/terraform-provider-aci
+- Exemple officiel : https://github.com/netascode/nac-aci-comprehensive-example
