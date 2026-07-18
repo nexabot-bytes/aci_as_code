@@ -29,9 +29,9 @@ terraform {
 #  insecure = true  -> accepte le certificat self-signed du simulateur
 ###############################################################################
 provider "aci" {
-  username = "admin"            # <-- a modifier
-  password = "C1sco12345"       # <-- a modifier
-  url      = "https://192.168.0.245" # <-- a modifier (IP/URL de l'APIC)
+  # username = "admin"                   # <-- a modifier
+  # password = "CHANGE-ME"           # <-- a modifier
+  # url      = "https://192.0.2.1"     # <-- a modifier (IP/URL de l'APIC)
   insecure = true               # simulateur : certificat self-signed
 }
 

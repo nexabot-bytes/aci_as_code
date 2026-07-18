@@ -16,3 +16,6 @@ __pycache__/
 
 # --- Divers ---
 .DS_Store
+
+# --- Config racine avec credentials (JAMAIS commiter) ---
+main.tf
