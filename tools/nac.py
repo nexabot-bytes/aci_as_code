@@ -5016,7 +5016,11 @@ _DRIFT_ID_KEYS = ("name", "id", "ip", "prefix", "hostname_ip", "mac", "username"
 def _drift_key(item):
     """Cle d'identite d'un element de liste (pour matcher YAML <-> fabric)."""
     if isinstance(item, dict):
-        k = tuple((f, item[f]) for f in _DRIFT_ID_KEYS if f in item)
+        # valeur composite (ex. service_graph_templates[].device = {name: X}) :
+        # repr() la rend hashable sans perdre l'identite
+        k = tuple((f, item[f] if isinstance(item[f], (str, int, float, bool))
+                   else repr(item[f]))
+                  for f in _DRIFT_ID_KEYS if f in item)
         return k if k else ("_raw", repr(sorted(item.items(), key=str)))
     return ("_val", repr(item))
 
